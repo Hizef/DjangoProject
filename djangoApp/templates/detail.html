@@ -1,0 +1,214 @@
+<!Doctype html>
+<html lang = "en">
+    <head>
+        <meta charset = "UTF-8">
+        <title> Detail Board </title>
+         <!--Ajax 코드 -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    </head>
+    <body>
+        <form action = "{% url 'update' board.id %}" method = "POST">
+            {% csrf_token %}
+                <input type = "text" class = "title" name = "title" value = "{{ board.title }}" readonly/>
+                <textarea class = "content" name = "content" readonly>{{ board.content }}</textarea>
+            {% if board.member.id == session %}
+                <input type = "button" class = "btnUpdate" value = "수정">
+                <input type = "button" class = "btnDelete" value = "삭제" onclick = "deleteBoard({{ board.id }})">
+                <input type = "submit" class = "btnSubmit" value = "수정 확정" style = "display : none" /> 
+                <input type = "button" class = "btnCancel" value = "취소" onclick = "updateCancel()" style = "display:none">
+            {% endif %}
+            <input type = "button" value = "돌아가기" onclick = "back()">
+        </form>
+        <div>
+            <table border = "1" class = "replyTable">
+                <tr>
+                    <td>작성자</td>
+                    <td>내용</td>
+                    <td>작성일</td>
+                    <td>수정일</td>
+                </tr>
+                <tbody class = "replyTbody">
+                    {% for item in reply %}
+                    <tr class = "replyTr {{ item.id }}">
+                        <td>{{ item.member.name }}</td>
+                        <td><input type="text" class="replyContent{{ item.id }}" value="{{ item.content }}" readonly></td>
+                        <td>{{ item.createdDate }}</td>
+                        <td>{{ item.updatedDate }}</td>
+
+                        {% if item.member.id == session %}
+                            <td class = "tdReplyUpdate{{ item.id }}"><input type = "button" value = "댓글 수정" onclick = "replyUpdate({{ item.id }})"></td>
+                            <td class = "tdReplyDelete{{ item.id }}"><input type = "button" value = "댓글 삭제" onclick = "replyDelete({{ item.id }})"></td>
+                            <td class = "tdReplySubmit{{ item.id }}" style = "display : none"><input type = "button" value = "댓글 수정 확정" onclick = "replySubmit({{ item.id }})"></td>
+                            <td class = "tdReplyUpdateCancel{{ item.id }}" style = "display : none"><input type = "button" value = "댓글 수정 취소" onclick = "replyUpdateCancel({{ item.id }})"></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {{ board.member.name }}
+            <textarea class = "replyContent" placeholder = "댓글 입력"></textarea>
+            <input type = "button" value = "돌아가기" onclick = "back()">
+        </div>
+    </body>
+    <script>
+        <!--수정을 눌렀을 때 readOnly를 풀어주는 내장 JavaScript-->
+        let btnUpdate = document.querySelector('.btnUpdate');
+        <!-- 댓글 입력시 전송 이벤트 -->
+        let btnReply = document.querySelector('.btnReply');
+
+        function deleteBoard(id){
+            location.href = '/delete/' + id;
+        }
+
+        const back = () => {
+            window.history.back();
+        }
+
+        if (btnUpdate != null) {
+            btnUpdate.addEventListener('click', e => {
+                let title = document.querySelector('.title');
+                let content = document.querySelector('.content');
+                let btnSubmit = document.querySelector('.btnSubmit');
+                let btnUpdate = document.querySelector('.btnUpdate');
+                let btnDelete = document.querySelector('.btnDelete');
+                let btnCancel = document.querySelector('.btnCancel');
+
+                title.readOnly = false;
+                content.readOnly = false;
+
+                btnSubmit.style.display = 'inline-block';
+                btnUpdate.style.display = 'none';
+
+                btnDelete.style.display = 'none';
+                btnCancel.style.display = 'inline-block';
+            });
+        }
+
+        const updateCancel = () => {
+            let title = document.querySelector('.title');
+            let content = document.querySelector('.content');
+            let btnSubmit = document.querySelector('.btnSubmit');
+            let btnUpdate = document.querySelector('.btnUpdate');
+            let btnDelete = document.querySelector('.btnDelete');
+            let btnCancel = document.querySelector('.btnCancel');
+
+            title.readOnly = true;
+            content.readOnly = true;
+
+            btnSubmit.style.display = 'none';
+            btnUpdate.style.display = 'inline-block';
+
+            btnDelete.style.display = 'inline-block';
+            btnCancel.style.display = 'none';
+        }
+
+        btnReply.addEventListener('click', e => {
+            let content = document.querySelector('.replyContent').value;
+
+            let param = {
+                'memberId' : '{{ board.member.id }}',
+                'boardId' : '{{ board.id }}',
+                'content' : content,
+            }
+
+            $.ajax({
+                url : '{% url 'reply' %}',
+                type : 'POST',
+                headers : {
+                    'X-CSRFTOKEN' : '{{ csrf_token }}'
+                },
+                data : JSON.stringify(param),
+                success : function(data) {
+                    console.log(data);
+                    let replyTable = document.querySelector('.replyTbody');
+                    let newTr = document.querySelector('tr');
+                    let str = `
+                        <td>${data.name}</td>
+                        <td>${data.content}</td>
+                        <td>${data.createDate}</td>
+                        <td>${data.updateDate}</td>`;
+                    newTr.innerHTML = str;
+                    replyTable.prepend(newTr);
+                },
+                error : function() {
+                    alert('오류! 무언가 잘못되었습니다.');
+                }
+            });
+        });
+
+        function replyUpdate(id){
+            let tdReplyUpdate = document.querySelector(`.tdReplyUpdate${id}`);
+            let tdReplyDelete = document.querySelector(`.tdReplyDelete${id}`);
+            let tdReplySubmit = document.querySelector(`.tdReplySubmit${id}`);
+            let tdReplyUpdateCancel = document.querySelector(`.tdReplyUpdateCancel${id}`);
+            let replyContent = document.querySelector(`.replyContent${id}`);
+
+            console.log(tdReplyUpdate);
+            tdReplyUpdate.style.display = 'none';
+            tdReplyDelete.style.display = 'none';
+            tdReplySubmit.style.display = 'inline-block';
+            tdReplyUpdateCancel.style.display = 'inline-block';
+            replyContent.readOnly = false;
+        }
+
+        function replySubmit(id){
+            let replyContent = document.querySelector(`.replyContent${id}`).value;
+            let param = {
+                'id' : id,
+                'content' : replyContent
+            }
+            $.ajax({
+                url : '{% url 'reply' %}',
+                type : 'POST',
+                headers : {
+                    'X-CSRFTOKEN' : '{{ csrf_token }}'
+                },
+                data : JSON.stringify(param),
+                success : function(data) {
+                    console.log(data);
+                    if (data.result == 'ok') {
+                        let tdReplyUpdate = document.querySelector(`.tdReplyUpdate${id}`);
+                        let tdReplyDelete = document.querySelector(`.tdReplyDelete${id}`);
+                        let tdReplySubmit = document.querySelector(`.tdReplySubmit${id}`);
+                        let tdReplyUpdateCancel = document.querySelector(`.tdReplyUpdateCancel${id}`);
+                        let replyContent = document.querySelector(`.replyContent${id}`);
+
+                        console.log(tdReplyUpdate);
+                        tdReplyUpdate.style.display = 'inline-block';
+                        tdReplyDelete.style.display = 'inline-block';
+                        tdReplySubmit.style.display = 'none';
+                        tdReplyUpdateCancel.style.display = 'none';
+                        replyContent.readOnly = true;
+                    }
+                },
+                error : function() {
+                    alert('오류! 무언가 잘못되었습니다.');
+                }
+            });
+        }
+
+        function replyDelete(id) {
+            let param = {
+                'replyId' : id
+            }
+            $.ajax({
+                url : '{% url 'reply' %}',
+                type : 'POST',
+                headers : {
+                    'X-CSRFTOKEN' : '{{ csrf_token }}'
+                },
+                data : JSON.stringify(param),
+                success : function(data) {
+                    if (data.result == 'ok') {
+                        let replyTr = document.querySelector(`.replyTr${id}`);
+                        replyTr.remove();
+                        alert('삭제했습니다.');
+                    }
+                },
+                error : function() {
+                    alert('오류! 무언가 잘못되었습니다.');
+                }
+            });
+        }
+    </script>
+</html>

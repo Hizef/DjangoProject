@@ -1,0 +1,14 @@
+<!Doctype html>
+<html lang = "en">
+    <head>
+        <meta charset = "UTF-8">
+        <title> Write Board </title>
+    </head>
+    <body>
+        <form action = "{% url 'write' %}" method = "POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type = "submit" value = "등록">
+        </form>
+    </body>
+</html>

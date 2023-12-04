@@ -1,0 +1,29 @@
+<!Doctype html>
+<html lang = "en">
+    <head>
+        <meta charset = "UTF-8">
+        <title> Home Page </title>
+    </head>
+    <body>
+        <p>메인 페이지</p>
+        <p1>댓글 기능을 넣었지만 작성 후 삭제 및 수정에서 오류가 계속 발생하는 부분을 고칠 수 없었습니다....</p1>
+        <p1></p1>
+        <table border = "1">
+            <tr>
+                <td>번호</td>
+                <td>제목</td>
+                <td>등록시간</td>
+                <td>수정시간</td>
+            </tr>
+            {% for item in boardList %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td><a href = "{% url 'detail' item.id %}">{{ item.title }}</a></td>
+                <td>{{ item.createdDate }}</td>
+                <td>{{ item.updatedDate }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <a href = "{% url 'write' %}"> 글 등록</a>
+    </body>
+</html>
